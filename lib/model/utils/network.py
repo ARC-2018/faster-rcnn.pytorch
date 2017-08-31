@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 import numpy as np
 import torchvision.models as models
+from vgg16 import vgg16
 import cv2
 import pdb
 
@@ -67,7 +68,14 @@ def adjust_learning_rate(optimizer, decay=0.1):
 def save_checkpoint(state, filename):
     torch.save(state, filename)
 
-
+def load_baseModel(model_name):
+    if model_name == "vgg16":
+        net = vgg16()
+        model_path = 'data/pretrained_model/{}_caffe.pth'.format(model_name)
+        net.load_pretrained_cnn(torch.load(model_path))
+        return net.slice()
+    elif model_name == "resnet50":
+        return None
 
 def _smooth_l1_loss(bbox_pred, bbox_targets, bbox_inside_weights, bbox_outside_weights, sigma=1.0, dim=[1]):
     

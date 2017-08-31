@@ -122,7 +122,7 @@ def parse_args():
 
 class sampler(Sampler):
   def __init__(self, train_size, batch_size):
-    num_data = train_size    
+    num_data = train_size
     self.num_per_batch = int(num_data / batch_size)
     self.batch_size = batch_size
     self.range = torch.arange(0,batch_size).view(1, batch_size).long()
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     from model.utils.logger import Logger
     # Set the logger
     logger = Logger('./logs')
-  
+
   if args.dataset == "pascal_voc":
       args.imdb_name = "voc_2007_trainval"
       args.imdbval_name = "voc_2007_test"
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     args.start_epoch = checkpoint['epoch']
     fasterRCNN.load_state_dict(checkpoint['model'])
     optimizer.load_state_dict(checkpoint['optimizer'])
-    lr = optimizer.param_groups[0]['lr']    
+    lr = optimizer.param_groups[0]['lr']
     print("loaded checkpoint %s" % (load_name))
 
   if args.ngpu > 1:
@@ -301,9 +301,11 @@ if __name__ == '__main__':
       optimizer.step()
 
       if step % args.disp_interval == 0:
+        if step > 0:
+            loss_temp /= args.disp_interval
         if args.ngpu > 1:
           print("[session %d][epoch %2d][iter %4d] loss: %.4f, lr: %.2e" \
-            % (args.session, epoch, step, loss_temp / args.disp_interval, lr))
+            % (args.session, epoch, step, loss_temp, lr))
           print("\t\t\tfg/bg=(%d/%d)" % (0, 0))
           print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f" % (0, 0, 0, 0))
           if args.use_tfboard:
@@ -315,7 +317,7 @@ if __name__ == '__main__':
 
         else:
           print("[session %d][epoch %2d][iter %4d] loss: %.4f, lr: %.2e" \
-            % (args.session, epoch, step, loss_temp / args.disp_interval, lr))
+            % (args.session, epoch, step, loss_temp, lr))
           print("\t\t\tfg/bg=(%d/%d)" % (fasterRCNN.fg_cnt, fasterRCNN.bg_cnt))
           print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box: %.4f" %
             (fasterRCNN.RCNN_base.RCNN_rpn.rpn_loss_cls.data[0], \
@@ -337,19 +339,18 @@ if __name__ == '__main__':
 
 
     if epoch % args.lr_decay_step == 0:
-      
         adjust_learning_rate(optimizer, args.lr_decay_gamma)
         lr *= args.lr_decay_gamma
 
-        #   pdb.set_trace()
-        save_name = os.path.join(output_dir, 'faster_rcnn_{}_{}_{}.pth'.format(args.session, epoch, step))
-        save_checkpoint({
-          'session': args.session,
-          'epoch': epoch + 1,
-          'model': fasterRCNN.state_dict(),
-          "optimizer": optimizer.state_dict(),
-        }, save_name)
-        print('save model: {}'.format(save_name))
+    #   pdb.set_trace()
+    save_name = os.path.join(output_dir, 'faster_rcnn_{}_{}_{}.pth'.format(args.session, epoch, step))
+    save_checkpoint({
+      'session': args.session,
+      'epoch': epoch + 1,
+      'model': fasterRCNN.state_dict(),
+      "optimizer": optimizer.state_dict(),
+    }, save_name)
+    print('save model: {}'.format(save_name))
 
     end = time.time()
     print(end - start)

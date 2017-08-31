@@ -27,12 +27,16 @@ import torchvision.transforms as transforms
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.roibatchLoader import roibatchLoader
 from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
-from model.faster_rcnn.faster_rcnn_cascade import _fasterRCNN
+# from model.faster_rcnn.faster_rcnn_cascade import _fasterRCNN
 from model.rpn.bbox_transform import clip_boxes
 from model.nms.nms_wrapper import nms
 from model.fast_rcnn.nms_wrapper import nms
 from model.rpn.bbox_transform import bbox_transform_inv
 from model.utils.network import save_net, load_net, vis_detections
+
+from model.faster_rcnn.vgg16 import vgg16
+from model.faster_rcnn.resnet import resnet
+
 import pdb
 
 def parse_args():
@@ -104,13 +108,26 @@ if __name__ == '__main__':
 
   print('{:d} roidb entries'.format(len(roidb)))
 
+  # initilize the network here.
+  if args.net == 'vgg16':
+    fasterRCNN = vgg16(imdb.classes)
+  elif args.net == 'res101':
+    fasterRCNN = resnet(imdb.classes, 101)
+  elif args.net == 'res50':
+    fasterRCNN = resnet(imdb.classes, 50)
+  elif args.net == 'res152':
+    fasterRCNN = resnet(imdb.classes, 152)
+  else:
+    print("network is not defined")
+    pdb.set_trace()
+
+  fasterRCNN.create_architecture()
+
   input_dir = args.load_dir + "/" + args.net
   if not os.path.exists(input_dir):
     raise Exception('There is no input directory for loading network')
   load_name = os.path.join(input_dir,
     'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
-
-  fasterRCNN = _fasterRCNN(args.net, imdb.classes)
   checkpoint = torch.load(load_name)
   fasterRCNN.load_state_dict(checkpoint['model'])
   print('load model successfully!')

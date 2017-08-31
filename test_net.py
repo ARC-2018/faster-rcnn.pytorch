@@ -56,7 +56,7 @@ def parse_args():
                       help='set config keys', default=None,
                       nargs=argparse.REMAINDER)
   parser.add_argument('--load_dir', dest='load_dir',
-                      help='directory to load models', default="models",
+                      help='directory to load models', default="/srv/shares/models",
                       nargs=argparse.REMAINDER)
   parser.add_argument('--ngpu', dest='ngpu',
                       help='number of gpu',
@@ -182,7 +182,7 @@ if __name__ == '__main__':
       det_tic = time.time()
       rois, cls_prob, bbox_pred, rpn_loss, rcnn_loss = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
       scores = cls_prob.data
-      boxes = rois[:, :, 1:5] / data[1][0][2]
+      boxes = rois.data[:, :, 1:5] / data[1][0][2]
 
       if cfg.TEST.BBOX_REG:
           # Apply bounding-box regression deltas

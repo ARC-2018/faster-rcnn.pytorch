@@ -63,7 +63,7 @@ def parse_args():
                       nargs=argparse.REMAINDER)
   parser.add_argument('--image_dir', dest='image_dir',
                       help='directory to load images', default="data/images",
-                      type=str)  
+                      type=str)
   parser.add_argument('--ngpu', dest='ngpu',
                       help='number of gpu',
                       default=1, type=int)
@@ -232,7 +232,7 @@ if __name__ == '__main__':
           fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
 
       scores = cls_prob.data
-      boxes = rois[:, :, 1:5] / im_scales[0]
+      boxes = rois.data[:, :, 1:5] / im_scales[0]
 
       if cfg.TEST.BBOX_REG:
           # Apply bounding-box regression deltas

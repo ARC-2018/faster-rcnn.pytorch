@@ -41,7 +41,7 @@ class roibatchLoader(data.Dataset):
         index_ratio = index
 
     # get the anchor index for current sample index
-    # here we set the anchor index to the last one 
+    # here we set the anchor index to the last one
     # sample in this group
 
     minibatch_db = [self._roidb[index_ratio]]
@@ -58,15 +58,20 @@ class roibatchLoader(data.Dataset):
         # padding the input image to fixed size for each group #
         ########################################################
 
-        # NOTE1: need to cope with the case where a group cover both conditions.
-        # NOTE2: need to consider the situation for the tail samples.
-        # NOTE3: need to implement a parallel data loader
-        if data_height > (data_width):
+        # NOTE1: need to cope with the case where a group cover both conditions. (done)
+        # NOTE2: need to consider the situation for the tail samples. (no worry)
+        # NOTE3: need to implement a parallel data loader. (no worry)
 
+        # get the index range
+        anchor_idx_leftmost = (np.floor((index) / self.batch_size)) * self.batch_size
+        anchor_idx_leftmost = min(int(anchor_idx_leftmost), self.data_size - 1)
 
-            anchor_idx = (np.floor((index) / self.batch_size)) * self.batch_size
-            anchor_idx = min(int(anchor_idx), self.data_size - 1)
-            ratio = self.ratio_list[anchor_idx]
+        anchor_idx_rightmost = (np.ceil((index + 1) / self.batch_size)) * self.batch_size - 1
+        anchor_idx_rightmost = min(int(anchor_idx_rightmost), self.data_size - 1)
+
+        if self.ratio_list[anchor_idx_rightmost] <= 1:
+            # this means that data_width < data_height
+            ratio = self.ratio_list[anchor_idx_leftmost]
 
             padding_data = torch.FloatTensor(int(np.ceil(data_width / ratio)), \
                                              data_width, 3).zero_()
@@ -78,20 +83,28 @@ class roibatchLoader(data.Dataset):
 
             # print("height %d %d \n" %(index, anchor_idx))
 
-        elif (data_height <= data_width):
-            
-            anchor_idx = (np.ceil((index + 1) / self.batch_size)) * self.batch_size - 1
-            anchor_idx = min(int(anchor_idx), self.data_size - 1)
-            ratio = self.ratio_list[anchor_idx]
+        elif self.ratio_list[anchor_idx_leftmost] >= 1:
+
+            ratio = self.ratio_list[anchor_idx_rightmost]
 
             padding_data = torch.FloatTensor(data_height, \
-                                             int(np.ceil(data_height * ratio)), 3).zero_()                     
+                                             int(np.ceil(data_height * ratio)), 3).zero_()
 
             padding_data[:, :data_width, :] = data[0]
 
             im_info[0, 1] = padding_data.size(1)
-            
-            # print("width %d %d \n" %(index, anchor_idx))
+
+        else:
+            trim_size = min(data_height, data_width)
+
+            padding_data = torch.FloatTensor(trim_size, trim_size, 3).zero_()
+
+            padding_data = data[0][:trim_size, :trim_size, :]
+
+            gt_boxes.clamp_(0, trim_size)
+
+            im_info[0, 0] = trim_size
+            im_info[0, 1] = trim_size
 
         num_boxes = min(gt_boxes.size(0), self.max_num_box)
 
